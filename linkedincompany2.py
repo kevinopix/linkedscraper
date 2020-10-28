@@ -15,6 +15,7 @@ from selenium.webdriver.support.ui import Select
 from selenium.common.exceptions import NoSuchElementException   
 from selenium.common.exceptions import TimeoutException
 from selenium.common.exceptions import UnexpectedAlertPresentException
+from fake_useragent import UserAgent
 import speech_recognition as sr
 import ffmpy
 import requests
@@ -49,10 +50,10 @@ def evaluate(x):
     print(x)
 
 
-myFile = open('infolinkedinscraped3.csv', 'w', newline='')
+myFile = open('infolinkedinscraped4.csv', 'w', newline='')
 with myFile:
     writer = csv.writer(myFile)
-    with open('linkedInfoclutch3.csv', 'r', errors='ignore') as read_obj:
+    with open('linkedInfoclutch4.csv', 'r', errors='ignore') as read_obj:
         csv_dict_reader = DictReader(read_obj)
         i = 0
         for row in csv_dict_reader:
@@ -61,36 +62,48 @@ with myFile:
             EMAIL = 'kevinopix@gmail.com'
             PASSWORD = 'pa00037011'
             options = ChromeOptions()
+            ua = UserAgent()
+            userAgent = ua.random
+            #print(userAgent)
+            options.add_argument(f'user-agent={userAgent}')
+            options.add_argument("--incognito")
             #options.headless = True
-            DRIVER_PATH = r'C:\Users\KevinOkome\Downloads\chromedriver_win32\chromedriver'
+            DRIVER_PATH = r'/usr/local/bin/chromedriver'
             driver=webdriver.Chrome(options=options,executable_path=DRIVER_PATH) 
             #driver = webdriver.Chrome()
             URL = url
-            driver.get(URL)
-            driver.implicitly_wait(5)
-            try:
+            if len(URL)>1 and 'https://www.linkedin.com' in URL:
+                driver.get(URL)
+                delay()
                 if driver.find_element_by_class_name("""join-form"""):
                     driver.find_element_by_xpath('/html/body/main/div/div/form[2]/section/p/a').click()
                     WebDriverWait(driver, 10).until(EC.presence_of_element_located((By.CLASS_NAME, 'login-email'))).send_keys(EMAIL)
                     WebDriverWait(driver, 10).until(EC.presence_of_element_located((By.CLASS_NAME, 'login-password'))).send_keys(PASSWORD)
                     WebDriverWait(driver, 10).until(EC.presence_of_element_located((By.ID, 'login-submit'))).click()
-                elif driver.find_element_by_xpath('//*[@id="captcha-internal"]'):
-                    frames=driver.find_elements_by_tag_name("iframe")
-                    driver.switch_to.frame(frames[0])
-                    delay()
-                    driver.find_element_by_class_name("recaptcha-checkbox-border").click()
-                    if driver.find_element_by_xpath("/html/body/div[2]/div[4]"):
-                        driver.switch_to.default_content()
-                        frames=driver.find_element_by_xpath("/html/body/div[2]/div[4]").find_elements_by_tag_name("iframe")
-                        driver.switch_to.frame(frames[0])
+                    #driver.switch_to.default_content()
+                    wali = []
+                    if driver.find_element_by_xpath('//*[@id="captcha-internal"]'):
+                        frames=driver.find_elements_by_tag_name("iframe")
+                        wali.append(frames)
+                        print(frames)
+                        print(len(frames))
+                        driver.switch_to.frame(frames[-1]);
                         delay()
-                        driver.find_element_by_id("recaptcha-audio-button").click()
-                        driver.switch_to.default_content()
-                        frames= driver.find_elements_by_tag_name("iframe")
-                        driver.switch_to.frame(frames[-1])
+                        driver.find_elements_by_tag_name("iframe")[0].click()
                         delay()
-                        if driver.find_element_by_xpath("/html/body/div/div/div[3]/div/button"):
-                            driver.find_element_by_xpath("/html/body/div/div/div[3]/div/button").click()
+                        framez=driver.find_elements_by_tag_name("iframe")
+                        driver.switch_to.frame(framez[-1]);
+                        delay()
+                        #print(driver.find_element_by_id('recaptcha-audio-button').get_attribute('class'))
+                        driver.find_element_by_id('recaptcha-audio-button').click()
+                        delay()
+                        #driver.switch_to.default_content()
+                        #frames2= driver.find_elements_by_tag_name("iframe")
+                        #print(frames2)
+                        #driver.switch_to.frame(frames2[0])
+                        #delay()
+                        if driver.find_element_by_xpath("/html/body/div/div/div[3]/div/button"): 
+                            driver.find_element_by_xpath('/html/body/div/div/div[3]/div/button').click()
                             src = driver.find_element_by_id("audio-source").get_attribute("src")
                             print("[INFO] Audio src: %s"%src)
                             urllib.request.urlretrieve(src, os.getcwd()+"\\sample.mp3")
@@ -108,19 +121,85 @@ with myFile:
                             driver.find_element_by_id("audio-response").send_keys(Keys.ENTER)
                             driver.switch_to.default_content()
                             delay()
-                            driver.find_element_by_id("recaptcha-demo-submit").click()
+                            driver.find_element_by_id("recaptcha-verify-button").click()
                             delay()
-                    else:
-                        driver.find_element_by_id("/html/body/div[1]/form/fieldset/ul/li[6]/input").click()
-                        delay()
+                            while driver.find_element_by_class_name('rc-audiochallenge-error-message'):
+                                driver.find_element_by_xpath('/html/body/div/div/div[3]/div/button').click()
+                                src = driver.find_element_by_id("audio-source").get_attribute("src")
+                                print("[INFO] Audio src: %s"%src)
+                                urllib.request.urlretrieve(src, os.getcwd()+"\\sample.mp3")
+                                sound = pydub.AudioSegment.from_mp3(os.getcwd()+"\\sample.mp3")
+                                sound.export(os.getcwd()+"\\sample.wav", format="wav")
+                                sample_audio = sr.AudioFile(os.getcwd()+"\\sample.wav")
+                                r= sr.Recognizer()
+                                with sample_audio as source:
+                                    audio = r.record(source)
+                                #translate audio to text with google voice recognition
+                                key=r.recognize_google(audio)
+                                print("[INFO] Recaptcha Passcode: %s"%key)
+                                #key in results and submit
+                                driver.find_element_by_id("audio-response").send_keys(key.lower())
+                                driver.find_element_by_id("audio-response").send_keys(Keys.ENTER)
+                                driver.switch_to.default_content()
+                                delay()
+                                driver.find_element_by_id("recaptcha-verify-button").click()
+                                delay()
+                        else:
+                            driver.find_element_by_id("/html/body/div[1]/form/fieldset/ul/li[6]/input").click()
+                            delay()
                 elif driver.find_element_by_class_name("""login__form"""):
                     driver.find_element_by_xpath("""//*[@id="username"]""").send_keys(EMAIL)
                     driver.implicitly_wait(2)
                     driver.find_element_by_xpath("""//*[@id="password"]""").send_keys(PASSWORD)
                     driver.implicitly_wait(2)
                     driver.find_element_by_xpath("""//*[@id="app__container"]/main/div[2]/form/div[3]/button""").click()
-                else:
-                    pass
+                elif driver.find_element_by_class_name("""section-container__title"""):
+                    title = driver.find_element_by_class_name("""top-card-layout__title""").text
+                    driver.find_element_by_class_name("""about-us__basic-info-list""")
+                    soup = BeautifulSoup(driver.page_source, "html.parser")
+                    dl_data = soup.find_all("dd")
+                    dt_data = soup.find_all("dt")
+                    jaba = []
+                    jaba2 = []
+                    for each in dl_data:
+                        ite = each.text.strip().replace('\n','')
+                        jaba.append(ite)
+                    for each in dt_data:
+                        ite2 = each.text.strip().replace('\n','')
+                        jaba2.append(ite2)
+                    jaba = [ x for x in jaba if "on LinkedIn" not in x ]  
+                    cdf = pd.DataFrame()
+                    cdf['each'] = ["Website", "Phone","Industry", "Company size", "Headquarters","Type","Founded","Specialties"]
+                    cdf['val2'] = ''
+                    df = pd.DataFrame()
+                    df['each'] = jaba2 
+                    df['val'] = jaba 
+                    fin = pd.merge(cdf,df,on=['each'], how='left').fillna('')
+                    valus = fin['val'].tolist()
+                    print(valus)
+                    website = valus[0]
+                    phone = valus[1].split(' ')[0]
+                    industry = valus[2]
+                    co_size = valus[3] 
+                    hq = valus[4]
+                    typ = valus[5]
+                    founded = valus[6]
+                    specialities = valus[7]
+                    location = driver.find_element_by_class_name('locations__location').text.replace('Get directions','').replace('Primary','').split('to')[0]
+                    location = location.replace('\n',' ').strip()
+                    latlngz = geocode(str(location))
+                    #print(latlngz)
+                    latitude = latlngz[0]
+                    longitude = latlngz[1]
+                    if location is None or latitude is None or latitude is None:
+                        location = ''
+                        latitude = ''
+                        longitude = ''
+                    out = [URL,title,website,phone,industry,co_size,typ,founded,specialities,hq, location,latitude,longitude]
+                    print(out) 
+                    writer.writerow(out)
+                    driver.quit()
+                    delay()
                 ib = URL + "/about/"
                 driver.get(ib)
                 driver.implicitly_wait(5)
@@ -183,9 +262,17 @@ with myFile:
                     test = driver.find_elements_by_tag_name('g')
                     #driver.implicitly_wait(5)
                     try:
+                        driver.switch_to.default_content()
+                        delay()
                         test[-1].click()
-                        driver.implicitly_wait(5)
                         locationa = driver.find_element_by_xpath("""/html/body/div[7]/div[3]/div/div[3]/div[2]/div[2]/div[1]/div[2]/div[2]/div[1]/div/ul/li/div/p""").text
+                        if locationa == '':
+                            zogo = list(range(2,10)) 
+                            for each in zogo:
+                                test[-each].click()
+                                locationa = driver.find_element_by_xpath("""/html/body/div[7]/div[3]/div/div[3]/div[2]/div[2]/div[1]/div[2]/div[2]/div[1]/div/ul/li/div/p""").text
+                        else:
+                            pass
                         locationa = locationa.replace('\n',' ').strip()
                         latlngza = geocode(str(locationa))
                         latitudea = latlngza[0]
@@ -200,10 +287,11 @@ with myFile:
                 print(i,out)
                 writer.writerow(out)
                 driver.quit()
-            except (exceptions.NoSuchElementException, exceptions.InvalidArgumentException):
+            else:
                 writer.writerow('')
                 driver.quit()
-                time.sleep(5)
+                delay()
                 continue
+
                 
 

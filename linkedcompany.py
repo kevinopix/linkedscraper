@@ -62,7 +62,7 @@ with myFile:
             PASSWORD = 'pa00037011'
             options = ChromeOptions()
             #options.headless = True
-            DRIVER_PATH = r'C:\Users\KevinOkome\Downloads\chromedriver_win32\chromedriver'
+            DRIVER_PATH = r'/usr/local/bin/chromedriver'
             driver=webdriver.Chrome(options=options,executable_path=DRIVER_PATH) 
             #driver = webdriver.Chrome()
             URL = url
@@ -129,7 +129,7 @@ with myFile:
                     frames=driver.find_elements_by_tag_name("iframe")
                     driver.switch_to.frame(frames[0])
                     delay()
-                    driver.find_element_by_class_name("recaptcha-checkbox-border").click()
+                    driver.find_element_by_class_name("recaptcha-checkbox-spinner").click()
                     if driver.find_element_by_xpath("/html/body/div[2]/div[4]"):
                         driver.switch_to.default_content()
                         frames=driver.find_element_by_xpath("/html/body/div[2]/div[4]").find_elements_by_tag_name("iframe")
