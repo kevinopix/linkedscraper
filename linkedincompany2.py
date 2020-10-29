@@ -66,7 +66,7 @@ with myFile:
             userAgent = ua.random
             #print(userAgent)
             options.add_argument(f'user-agent={userAgent}')
-            options.add_argument("--incognito")
+            #options.add_argument("--incognito")
             #options.headless = True
             DRIVER_PATH = r'/usr/local/bin/chromedriver'
             driver=webdriver.Chrome(options=options,executable_path=DRIVER_PATH) 
@@ -74,17 +74,29 @@ with myFile:
             URL = url
             if len(URL)>1 and 'https://www.linkedin.com' in URL:
                 driver.get(URL)
-                delay()
+                time.sleep(5)
+                try:
+                    #driver.find_element_by_id('captcha-internal')
+                    driver.find_element_by_class_name("""join-form""")
+                    driver.find_element_by_class_name("""login__form""")
+                    driver.find_element_by_class_name("""section-container__title""")
+                except:
+                    pass
+                # if driver.find_element_by_id('captcha-internal'):
+                #     framez=driver.find_elements_by_tag_name("iframe")
+                #     print(framez)
+                #     driver.switch_to.frame(framez[-1]);
+                #     delay()
+                #     print(driver.find_element_by_class_name('audioBtn').get_attribute('aria-label'))
+                #     pass
                 if driver.find_element_by_class_name("""join-form"""):
                     driver.find_element_by_xpath('/html/body/main/div/div/form[2]/section/p/a').click()
                     WebDriverWait(driver, 10).until(EC.presence_of_element_located((By.CLASS_NAME, 'login-email'))).send_keys(EMAIL)
                     WebDriverWait(driver, 10).until(EC.presence_of_element_located((By.CLASS_NAME, 'login-password'))).send_keys(PASSWORD)
                     WebDriverWait(driver, 10).until(EC.presence_of_element_located((By.ID, 'login-submit'))).click()
                     #driver.switch_to.default_content()
-                    wali = []
                     if driver.find_element_by_xpath('//*[@id="captcha-internal"]'):
                         frames=driver.find_elements_by_tag_name("iframe")
-                        wali.append(frames)
                         print(frames)
                         print(len(frames))
                         driver.switch_to.frame(frames[-1]);
@@ -116,14 +128,16 @@ with myFile:
                             #translate audio to text with google voice recognition
                             key=r.recognize_google(audio)
                             print("[INFO] Recaptcha Passcode: %s"%key)
-                            #key in results and submit
+                            time.sleep(5)
                             driver.find_element_by_id("audio-response").send_keys(key.lower())
+                            time.sleep(5)
                             driver.find_element_by_id("audio-response").send_keys(Keys.ENTER)
                             driver.switch_to.default_content()
                             delay()
-                            driver.find_element_by_id("recaptcha-verify-button").click()
-                            delay()
                             while driver.find_element_by_class_name('rc-audiochallenge-error-message'):
+                                framez=driver.find_elements_by_tag_name("iframe")
+                                driver.switch_to.frame(framez[-1]);
+                                delay()
                                 driver.find_element_by_xpath('/html/body/div/div/div[3]/div/button').click()
                                 src = driver.find_element_by_id("audio-source").get_attribute("src")
                                 print("[INFO] Audio src: %s"%src)
@@ -144,6 +158,8 @@ with myFile:
                                 delay()
                                 driver.find_element_by_id("recaptcha-verify-button").click()
                                 delay()
+                            driver.find_element_by_id("recaptcha-verify-button").click()
+                            delay()
                         else:
                             driver.find_element_by_id("/html/body/div[1]/form/fieldset/ul/li[6]/input").click()
                             delay()

@@ -4,7 +4,7 @@ from selenium.webdriver.common.by import By
 from selenium.webdriver.support.ui import WebDriverWait
 from selenium.webdriver.support import expected_conditions as EC
 from selenium.webdriver.common.action_chains import ActionChains
-from selenium.webdriver.chrome.options import Options as ChromeOptions
+from selenium.webdriver.Firefox.options import Options 
 import pandas as pd
 from bs4 import BeautifulSoup
 from selenium.common import exceptions
@@ -60,10 +60,10 @@ with myFile:
             url = row['linkedin_URL']
             EMAIL = 'kevinopix@gmail.com'
             PASSWORD = 'pa00037011'
-            options = ChromeOptions()
+            options = Options()
             #options.headless = True
-            DRIVER_PATH = r'/usr/local/bin/chromedriver'
-            driver=webdriver.Chrome(options=options,executable_path=DRIVER_PATH) 
+            DRIVER_PATH = r'/usr/local/bin/geckodriver'
+            driver=webdriver.Firefox(options=options,executable_path=DRIVER_PATH) 
             #driver = webdriver.Chrome()
             URL = url
             driver.get(URL)
@@ -125,53 +125,55 @@ with myFile:
                     WebDriverWait(driver, 10).until(EC.presence_of_element_located((By.CLASS_NAME, 'login-email'))).send_keys(EMAIL)
                     WebDriverWait(driver, 10).until(EC.presence_of_element_located((By.CLASS_NAME, 'login-password'))).send_keys(PASSWORD)
                     WebDriverWait(driver, 10).until(EC.presence_of_element_located((By.ID, 'login-submit'))).click()
-                elif driver.find_element_by_xpath('//*[@id="captcha-internal"]'):
-                    frames=driver.find_elements_by_tag_name("iframe")
-                    driver.switch_to.frame(frames[0])
-                    delay()
-                    driver.find_element_by_class_name("recaptcha-checkbox-spinner").click()
-                    if driver.find_element_by_xpath("/html/body/div[2]/div[4]"):
-                        driver.switch_to.default_content()
-                        frames=driver.find_element_by_xpath("/html/body/div[2]/div[4]").find_elements_by_tag_name("iframe")
+                    if driver.find_element_by_xpath('//*[@id="captcha-internal"]'):
+                        frames=driver.find_elements_by_tag_name("iframe")
                         driver.switch_to.frame(frames[0])
                         delay()
-                        driver.find_element_by_id("recaptcha-audio-button").click()
-                        driver.switch_to.default_content()
-                        frames= driver.find_elements_by_tag_name("iframe")
-                        driver.switch_to.frame(frames[-1])
-                        delay()
-                        if driver.find_element_by_xpath("/html/body/div/div/div[3]/div/button"):
-                            driver.find_element_by_xpath("/html/body/div/div/div[3]/div/button").click()
-                            src = driver.find_element_by_id("audio-source").get_attribute("src")
-                            print("[INFO] Audio src: %s"%src)
-                            urllib.request.urlretrieve(src, os.getcwd()+"\\sample.mp3")
-                            sound = pydub.AudioSegment.from_mp3(os.getcwd()+"\\sample.mp3")
-                            sound.export(os.getcwd()+"\\sample.wav", format="wav")
-                            sample_audio = sr.AudioFile(os.getcwd()+"\\sample.wav")
-                            r= sr.Recognizer()
-                            with sample_audio as source:
-                                audio = r.record(source)
-                            #translate audio to text with google voice recognition
-                            key=r.recognize_google(audio)
-                            print("[INFO] Recaptcha Passcode: %s"%key)
-                            #key in results and submit
-                            driver.find_element_by_id("audio-response").send_keys(key.lower())
-                            driver.find_element_by_id("audio-response").send_keys(Keys.ENTER)
+                        driver.find_element_by_class_name("recaptcha-checkbox-spinner").click()
+                        if driver.find_element_by_xpath("/html/body/div[2]/div[4]"):
                             driver.switch_to.default_content()
+                            frames=driver.find_element_by_xpath("/html/body/div[2]/div[4]").find_elements_by_tag_name("iframe")
+                            driver.switch_to.frame(frames[0])
                             delay()
-                            driver.find_element_by_id("recaptcha-demo-submit").click()
+                            driver.find_element_by_id("recaptcha-audio-button").click()
+                            driver.switch_to.default_content()
+                            frames= driver.find_elements_by_tag_name("iframe")
+                            driver.switch_to.frame(frames[-1])
+                            delay()
+                            if driver.find_element_by_xpath("/html/body/div/div/div[3]/div/button"):
+                                driver.find_element_by_xpath("/html/body/div/div/div[3]/div/button").click()
+                                src = driver.find_element_by_id("audio-source").get_attribute("src")
+                                print("[INFO] Audio src: %s"%src)
+                                urllib.request.urlretrieve(src, os.getcwd()+"\\sample.mp3")
+                                sound = pydub.AudioSegment.from_mp3(os.getcwd()+"\\sample.mp3")
+                                sound.export(os.getcwd()+"\\sample.wav", format="wav")
+                                sample_audio = sr.AudioFile(os.getcwd()+"\\sample.wav")
+                                r= sr.Recognizer()
+                                with sample_audio as source:
+                                    audio = r.record(source)
+                                #translate audio to text with google voice recognition
+                                key=r.recognize_google(audio)
+                                print("[INFO] Recaptcha Passcode: %s"%key)
+                                #key in results and submit
+                                driver.find_element_by_id("audio-response").send_keys(key.lower())
+                                driver.find_element_by_id("audio-response").send_keys(Keys.ENTER)
+                                driver.switch_to.default_content()
+                                delay()
+                                driver.find_element_by_id("recaptcha-demo-submit").click()
+                                delay()
+                        else:
+                            driver.find_element_by_id("/html/body/div[1]/form/fieldset/ul/li[6]/input").click()
                             delay()
                     else:
-                        driver.find_element_by_id("/html/body/div[1]/form/fieldset/ul/li[6]/input").click()
-                        delay()
-                elif driver.find_element_by_class_name("""login__form"""):
-                    driver.find_element_by_xpath("""//*[@id="username"]""").send_keys(EMAIL)
-                    driver.implicitly_wait(2)
-                    driver.find_element_by_xpath("""//*[@id="password"]""").send_keys(PASSWORD)
-                    driver.implicitly_wait(2)
-                    driver.find_element_by_xpath("""//*[@id="app__container"]/main/div[2]/form/div[3]/button""").click()
-                else:
-                    pass
+                        pass
+                    if driver.find_element_by_class_name("""login__form"""):
+                        driver.find_element_by_xpath("""//*[@id="username"]""").send_keys(EMAIL)
+                        driver.implicitly_wait(2)
+                        driver.find_element_by_xpath("""//*[@id="password"]""").send_keys(PASSWORD)
+                        driver.implicitly_wait(2)
+                        driver.find_element_by_xpath("""//*[@id="app__container"]/main/div[2]/form/div[3]/button""").click()
+                    else:
+                        pass
 
                 ib = URL + "/about/"
                 try:
